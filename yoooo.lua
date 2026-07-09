@@ -1,31 +1,88 @@
 --[[
-    DEATH BALL ULTIMATE SCRIPT v2 - Kyriel Edition
-    Categorized GUI + All Features + Auto Logic Prediction
+    DEATH BALL ULTIMATE - FIXED GUI
+    Kyriel Edition
 ]]
 
+-- ============================================
+-- GUI BUATAN PALING AWAL (biar pasti muncul)
+-- ============================================
 local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KyrielUltimateGUI"
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+
+-- Frame utama
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BackgroundTransparency = 0.15
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "KYRIEL ULTIMATE"
+Title.TextColor3 = Color3.fromRGB(100, 200, 255)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.BackgroundTransparency = 1
+Title.Parent = MainFrame
+
+-- Close button
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 30, 0, 30)
+Close.Position = UDim2.new(1, -35, 0, 0)
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 100, 100)
+Close.TextScaled = true
+Close.Font = Enum.Font.GothamBold
+Close.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+Close.BorderSizePixel = 0
+Close.Parent = MainFrame
+Close.MouseButton1Click:Connect(function()
+    ScreenGui.Enabled = false
+end)
+
+-- Scroll frame
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -10, 1, -40)
+Scroll.Position = UDim2.new(0, 5, 0, 35)
+Scroll.BackgroundTransparency = 1
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+Scroll.ScrollBarThickness = 6
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(100, 200, 255)
+Scroll.Parent = MainFrame
+
+local UIList = Instance.new("UIListLayout")
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Padding = UDim.new(0, 4)
+UIList.Parent = Scroll
+
+-- ============================================
+-- SERVICE & VARIABLES
+-- ============================================
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 
-local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 
--- ============================================
--- SETTINGS
--- ============================================
+-- Settings table
 local Settings = {
-    -- Bypasses
     GazoBypass = false,
     TorokaiBypass = false,
     WuBypass = false,
-    -- Parry
     LegitParry = false,
     AutoSpamParry = false,
     InfinityParry = false,
-    -- Movement
     AIMovement = false,
     AutoJump = false,
     AutoDash = false,
@@ -34,34 +91,31 @@ local Settings = {
     SpeedV2 = false,
     OrbitPlayer = false,
     OrbitBall = false,
-    -- Auto Ready
     AutoReadyV2 = false,
-    -- Raid
     AutoRaid = false,
-    -- Visual
+    AutoCurve = false,
     SkinchangerV2 = false,
     AvatarChanger = false,
-    -- Other
-    AutoCurve = false,
     StreamerMode = false,
     DisableSecurityDistance = false,
     Desync = false,
-    -- Auto Logic (prediction)
     AutoLogic = false,
 }
 
 -- ============================================
--- PREDICTION ENGINE (same as before)
+-- PREDICTION ENGINE (simplified)
 -- ============================================
 local Prediction = {
-    Ball = { Position = nil, Velocity = nil, PreviousPositions = {}, LastUpdate = 0 },
-    Opponent = { Position = nil, Velocity = nil, PreviousPositions = {}, LastUpdate = 0 },
-    Settings = { PredictionAccuracy = 0.95, ReactionDelay = 0.05, MaxPredictionTime = 1.5, UpdateFrequency = 0.02 }
+    Ball = { Position = nil, Velocity = nil, Previous = {}, LastUpdate = 0 },
+    Opponent = { Position = nil, Velocity = nil, Previous = {}, LastUpdate = 0 },
+    Settings = { MaxPredictionTime = 1.5, UpdateFrequency = 0.02 }
 }
 
 local function GetBall()
     for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Part") and (v.Name:lower():find("ball") or v.Name:lower():find("projectile")) then return v end
+        if v:IsA("Part") and (v.Name:lower():find("ball") or v.Name:lower():find("projectile")) then
+            return v
+        end
     end
     return nil
 end
@@ -83,11 +137,11 @@ local function TrackBall()
     if not ball then return end
     local pos = ball.Position
     local now = tick()
-    table.insert(Prediction.Ball.PreviousPositions, {pos = pos, time = now})
-    if #Prediction.Ball.PreviousPositions > 10 then table.remove(Prediction.Ball.PreviousPositions, 1) end
-    if #Prediction.Ball.PreviousPositions >= 2 then
-        local first = Prediction.Ball.PreviousPositions[1]
-        local last = Prediction.Ball.PreviousPositions[#Prediction.Ball.PreviousPositions]
+    table.insert(Prediction.Ball.Previous, {pos = pos, time = now})
+    if #Prediction.Ball.Previous > 10 then table.remove(Prediction.Ball.Previous, 1) end
+    if #Prediction.Ball.Previous >= 2 then
+        local first = Prediction.Ball.Previous[1]
+        local last = Prediction.Ball.Previous[#Prediction.Ball.Previous]
         local dt = last.time - first.time
         if dt > 0.01 then
             Prediction.Ball.Velocity = (last.pos - first.pos) / dt
@@ -104,11 +158,11 @@ local function TrackOpponent()
     if not root then return end
     local pos = root.Position
     local now = tick()
-    table.insert(Prediction.Opponent.PreviousPositions, {pos = pos, time = now})
-    if #Prediction.Opponent.PreviousPositions > 10 then table.remove(Prediction.Opponent.PreviousPositions, 1) end
-    if #Prediction.Opponent.PreviousPositions >= 2 then
-        local first = Prediction.Opponent.PreviousPositions[1]
-        local last = Prediction.Opponent.PreviousPositions[#Prediction.Opponent.PreviousPositions]
+    table.insert(Prediction.Opponent.Previous, {pos = pos, time = now})
+    if #Prediction.Opponent.Previous > 10 then table.remove(Prediction.Opponent.Previous, 1) end
+    if #Prediction.Opponent.Previous >= 2 then
+        local first = Prediction.Opponent.Previous[1]
+        local last = Prediction.Opponent.Previous[#Prediction.Opponent.Previous]
         local dt = last.time - first.time
         if dt > 0.01 then
             Prediction.Opponent.Velocity = (last.pos - first.pos) / dt
@@ -123,7 +177,7 @@ local function PredictBallLanding()
     if not ball then return nil end
     local pos = ball.Position
     local vel = ball.Velocity or Vector3.new(0,0,0)
-    if vel.Magnitude < 5 then return {Position = pos, Time = 0.5, Velocity = vel} end
+    if vel.Magnitude < 5 then return {Position = pos, Time = 0.5} end
     local gravity = Vector3.new(0, -196.2, 0)
     local dt = 0.02
     local maxTime = Prediction.Settings.MaxPredictionTime
@@ -131,9 +185,9 @@ local function PredictBallLanding()
     for t = 0, maxTime, dt do
         curVel = curVel + gravity * dt
         curPos = curPos + curVel * dt
-        if curPos.Y < 2 then return {Position = curPos, Time = t, Velocity = curVel} end
+        if curPos.Y < 2 then return {Position = curPos, Time = t} end
     end
-    return {Position = pos + vel * 1.5, Time = 1.5, Velocity = vel}
+    return {Position = pos + vel * 1.5, Time = 1.5}
 end
 
 local function PredictOpponentPosition(timeAhead)
@@ -170,7 +224,7 @@ local function MakeDecision()
     if math.abs(ballPos.X) > 80 or math.abs(ballPos.Z) > 80 then
         action = "reset"; target = Vector3.new(0,3,0)
     end
-    return {Action = action, Target = target, BallPred = pred, OppPred = oppPos}
+    return {Action = action, Target = target}
 end
 
 local function ExecuteDecision(decision)
@@ -219,7 +273,7 @@ local function AutoLogicLoop()
 end
 
 -- ============================================
--- FEATURE FUNCTIONS (shortened for brevity, same as before)
+-- FEATURE FUNCTIONS
 -- ============================================
 local function GazoBypass()
     for _, v in ipairs(workspace:GetDescendants()) do
@@ -426,78 +480,11 @@ local function Desync()
 end
 
 -- ============================================
--- GUI WITH CATEGORIES
+-- TOGGLE BUILDER (for GUI)
 -- ============================================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KyrielUltimateGUI"
-ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -250)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-MainFrame.BackgroundTransparency = 0.12
-MainFrame.BorderSizePixel = 1
-MainFrame.BorderColor3 = Color3.fromRGB(80, 180, 255)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "KYRIEL ULTIMATE"
-Title.TextColor3 = Color3.fromRGB(80, 180, 255)
-Title.TextScaled = true
-Title.Font = Enum.Font.GothamBold
-Title.BackgroundTransparency = 1
-Title.Parent = MainFrame
-
-local Close = Instance.new("TextButton")
-Close.Size = UDim2.new(0, 30, 0, 30)
-Close.Position = UDim2.new(1, -35, 0, 0)
-Close.Text = "X"
-Close.TextColor3 = Color3.fromRGB(255,100,100)
-Close.TextScaled = true
-Close.Font = Enum.Font.GothamBold
-Close.BackgroundColor3 = Color3.fromRGB(30,30,40)
-Close.BorderSizePixel = 0
-Close.Parent = MainFrame
-Close.MouseButton1Click:Connect(function() ScreenGui.Enabled = false end)
-
--- Scroll frame
-local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1, -10, 1, -40)
-Scroll.Position = UDim2.new(0, 5, 0, 35)
-Scroll.BackgroundTransparency = 1
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-Scroll.ScrollBarThickness = 4
-Scroll.ScrollBarImageColor3 = Color3.fromRGB(80,180,255)
-Scroll.Parent = MainFrame
-
-local UIList = Instance.new("UIListLayout")
-UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Padding = UDim.new(0, 3)
-UIList.Parent = Scroll
-
--- Helper to add category header
-local function AddCategory(title)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, 0, 0, 22)
-    lbl.Text = "  " .. title
-    lbl.TextColor3 = Color3.fromRGB(100, 200, 255)
-    lbl.TextScaled = true
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Font = Enum.Font.GothamBold
-    lbl.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    lbl.BorderSizePixel = 1
-    lbl.BorderColor3 = Color3.fromRGB(80, 180, 255)
-    lbl.Parent = Scroll
-end
-
--- Toggle builder
 local function MakeToggle(text, key, shortcut)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 26)
+    frame.Size = UDim2.new(1, 0, 0, 28)
     frame.BackgroundTransparency = 1
     frame.Parent = Scroll
 
@@ -537,7 +524,21 @@ local function MakeToggle(text, key, shortcut)
     return btn
 end
 
--- Categories and toggles
+local function AddCategory(title)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 0, 22)
+    lbl.Text = "  " .. title
+    lbl.TextColor3 = Color3.fromRGB(100, 200, 255)
+    lbl.TextScaled = true
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.GothamBold
+    lbl.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    lbl.BorderSizePixel = 1
+    lbl.BorderColor3 = Color3.fromRGB(80, 180, 255)
+    lbl.Parent = Scroll
+end
+
+-- Categories
 local categories = {
     {name = "Auto Logic", items = {{"Auto Logic + Prediction", "AutoLogic", "P"}}},
     {name = "Bypasses", items = {
@@ -589,7 +590,7 @@ UIList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 end)
 
 -- ============================================
--- KEYBINDS
+-- KEYBINDS (tetep jalan walau GUI mati)
 -- ============================================
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
@@ -640,18 +641,13 @@ UserInputService.InputBegan:Connect(function(input, gp)
 end)
 
 -- ============================================
--- MAIN LOOP (run all features except auto logic)
+-- MAIN LOOP
 -- ============================================
 RunService.Heartbeat:Connect(function(delta)
     pcall(function()
-        -- Only run individual features if auto logic is off to avoid conflicts,
-        -- but we can let them run together if user wants (e.g., speed, skin, etc.)
-        -- We'll conditionally disable movement-related ones if auto logic is on.
         if not Settings.AutoLogic then
             if Settings.AIMovement then AIMovement() end
-            -- other movement can still be used with auto logic? We'll allow it.
         end
-        -- These can always run
         if Settings.GazoBypass then GazoBypass() end
         if Settings.TorokaiBypass then TorokaiBypass() end
         if Settings.WuBypass then WuBypass() end
@@ -687,6 +683,6 @@ Player.CharacterAdded:Connect(function(char)
     if Settings.SpeedV1 then Humanoid.WalkSpeed = 25 end
 end)
 
-print("Kyriel Ultimate v2 loaded! Press M to open categorized menu.")
-print("All features are grouped for easy access. Keybinds listed next to toggles.")
+print("Kyriel Ultimate GUI loaded! Tekan M untuk toggle menu.")
+print("Semua fitur siap dipake. Kalo masih gak muncul, cek console (F9) buat error.")
 print("I just give the tools, whether they're used right or not is your business, boss.")
