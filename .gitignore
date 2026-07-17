@@ -1,41 +1,63 @@
-# Compiled Lua sources
-luac.out
+local player = game:GetService("Players").LocalPlayer
+local virtualInputManager = game:GetService("VirtualInputManager")
+local runService = game:GetService("RunService")
 
-# luarocks build files
-*.src.rock
-*.zip
-*.tar.gz
+local function clickButton(button)
+    local center = button.AbsolutePosition + (button.AbsoluteSize / 2)
+    virtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, true, game, 0)
+    virtualInputManager:SendMouseButtonEvent(center.X, center.Y, 0, false, game, 0)
+end
 
-# Object files
-*.o
-*.os
-*.ko
-*.obj
-*.elf
+local function pressKey(key)
+    virtualInputManager:SendKeyEvent(true, key, false, game)
+    virtualInputManager:SendKeyEvent(false, key, false, game)
+end
 
-# Precompiled Headers
-*.gch
-*.pch
+if workspace:FindFirstChild("Lobby") then
+    local closeBtn = player.PlayerGui.PromptGui.PromptClasses.PromptFirstTimeChampionClaim.CloseButton
+    
+    clickButton(closeBtn)
+    
+    task.wait(3.8)
+    
+    clickButton(closeBtn)
+    
+    workspace.Lobby.ReadyArea.ReadyZone.Size = Vector3.new(1000, 1000, 1000)
+    
+    task.wait(5.5)
+    pressKey(Enum.KeyCode.F)
+    
+    task.wait(3)
+    pressKey(Enum.KeyCode.F)
+    
+    task.wait(3.5)
+    pressKey(Enum.KeyCode.F)
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-*.def
-*.exp
+    task.wait(4.5)
+    pressKey(Enum.KeyCode.F)
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+    task.wait(4)
+    pressKey(Enum.KeyCode.One)
+    
+    task.wait(7)
+    clickButton(closeBtn)
+    
+    task.wait(0.5)
+    
+    local character = player.Character or player.CharacterAdded:Wait()
+    local head = character:WaitForChild("Head")
+    workspace.Summon["Standard Pack"].SummonPageTutorial.CFrame = head.CFrame
+    
+    task.wait(0.3)
+    pressKey(Enum.KeyCode.E)
+    
+    task.wait(2)
+    clickButton(closeBtn)
+    task.wait(0.7)
+    clickButton(closeBtn) 
+    task.wait(0.7)
+    clickButton(closeBtn)
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
+    task.wait(2)
+    clickButton(closeBtn)
+end
